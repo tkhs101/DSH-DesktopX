@@ -1,4 +1,152 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><title>DSH-DesktopX</title>
-<style>body{font-family:system-ui;display:flex;height:100vh;margin:0;align-items:center;justify-content:center;background:#0f1115;color:#e8eaf0}.box{text-align:center}.spin{width:36px;height:36px;border:4px solid #333;border-top-color:#4da3ff;border-radius:50%;margin:0 auto 16px;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}</style>
-</head><body><div class="box"><div class="spin"></div><div id="status">正在启动 DeepSeek Harness 后端…</div></div></body></html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH-DesktopX</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: transparent;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .window {
+    position: relative;
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+    background: #ffffff;
+    border: 1px solid #e4e9f2;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(30, 58, 120, 0.14);
+    -webkit-app-region: drag;
+  }
+  .win-btns {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+    -webkit-app-region: no-drag;
+  }
+  .win-btns button {
+    width: 30px;
+    height: 26px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #8a94a6;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .win-btns button:hover { background: #eef2f9; color: #333c4e; }
+  .win-btns button.close:hover { background: #e81123; border-color: #e81123; color: #fff; }
+  /* top-right pale blue blob */
+  .blob {
+    position: absolute;
+    top: -110px;
+    right: -90px;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #e7f0ff 0%, #eef4ff 55%, rgba(238, 244, 255, 0) 72%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* bottom waves */
+  .waves {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 46%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .center {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 29%;
+    padding-left: 60px;
+    padding-right: 60px;
+    text-align: center;
+  }
+  .logo {
+    width: min(620px, 74%);
+    height: auto;
+    display: block;
+    -webkit-user-drag: none;
+  }
+  .ring {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    margin-top: 44px;
+    border-radius: 50%;
+    border: 7px solid rgba(63, 140, 255, 0.16);
+  }
+  .ring svg {
+    position: absolute;
+    inset: -7px;
+    width: calc(100% + 14px);
+    height: calc(100% + 14px);
+    display: block;
+    color: #3f8cff;
+    animation: spin 0.85s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status {
+    margin-top: 22px;
+    font-size: 17px;
+    letter-spacing: 0.06em;
+    color: #5b6675;
+  }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="blob"></div>
+    <div class="win-btns">
+      <button id="btn-min" title="最小化" aria-label="最小化">─</button>
+      <button id="btn-close" class="close" title="关闭" aria-label="关闭">✕</button>
+    </div>
+    <svg class="waves" viewBox="0 0 920 300" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,120 C160,120 260,210 460,250 C660,290 760,240 920,160 L920,300 L0,300 Z" fill="#e9f1ff" opacity="0.55"/>
+      <path d="M0,170 C180,170 300,250 500,275 C700,300 800,260 920,210 L920,300 L0,300 Z" fill="#dceaff" opacity="0.55"/>
+      <path d="M0,235 C170,215 320,250 500,278 C680,305 800,285 920,245 L920,300 L0,300 Z" fill="#c9deff" opacity="0.5"/>
+    </svg>
+    <div class="center">
+      <img class="logo" src="./logo.png" alt="deepseek HARNESS" draggable="false">
+      <div class="ring" role="status" aria-label="loading">
+        <svg viewBox="0 0 54 54" fill="none">
+          <path d="M27 5 A22 22 0 0 1 49 27" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div id="status">正在启动后端，请耐心等待</div>
+    </div>
+  </div>
+<script>
+  // Frameless splash: our own min/close buttons talk to main via preload.
+  document.getElementById('btn-min')?.addEventListener('click', () => window.desktopx?.minimizeSplash?.());
+  document.getElementById('btn-close')?.addEventListener('click', () => window.desktopx?.closeSplash?.());
+</script>
+</body>
+</html>

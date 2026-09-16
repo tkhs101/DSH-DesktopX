@@ -1,6 +1,6 @@
 {
   "name": "dsh-desktopx",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Lightweight Electron shell for local dsh web (backend not bundled)",
   "main": "dist/main/index.js",

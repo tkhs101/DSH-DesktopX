@@ -18,6 +18,8 @@ async function boot(): Promise<void> {
     if (!quitting) { event.preventDefault(); mainWin?.hide(); }
   });
   ipcMain.on('window:hide', () => mainWin?.hide());
+  ipcMain.on('splash:minimize', () => splash?.minimize());
+  ipcMain.on('splash:close', () => void quitAll());
   ipcMain.handle('app:version', () => app.getVersion());
   createTray({
     onShow: () => { mainWin?.show(); mainWin?.focus(); },
