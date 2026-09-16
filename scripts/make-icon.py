@@ -53,16 +53,17 @@ sq.putalpha(m)
 
 TILE = 1024
 MARGIN = int(TILE * 0.06)
-# Near-black whale on near-black tile is invisible: DeepSeek-blue tile + white whale.
+# Black whale on white rounded tile (DeepSeek brand: black mark, light ground).
 tile = Image.new('RGBA', (TILE, TILE), (0, 0, 0, 0))
 d = ImageDraw.Draw(tile)
-d.rounded_rectangle([0, 0, TILE - 1, TILE - 1], radius=int(TILE * 0.225), fill=(77, 107, 254, 255))
+d.rounded_rectangle([0, 0, TILE - 1, TILE - 1], radius=int(TILE * 0.225), fill=(255, 255, 255, 255))
 inner = TILE - 2 * MARGIN
 whale = sq.resize((inner, inner), Image.LANCZOS)
+# recolor opaque pixels to near-black, keep smooth alpha
 r, g, b, a = whale.split()
-white = Image.new('RGBA', whale.size, (255, 255, 255, 255))
-white.putalpha(a)
-tile.alpha_composite(white, (MARGIN, MARGIN))
+black = Image.new('RGBA', whale.size, (20, 20, 22, 255))
+black.putalpha(a)
+tile.alpha_composite(black, (MARGIN, MARGIN))
 tile.save('C:/Temp/whale-icon-1024.png')
 print('tile saved 1024')
 
