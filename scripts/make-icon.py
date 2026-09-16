@@ -90,7 +90,7 @@ t16tile.alpha_composite(ww, ((T - gw.size[0]) // 2, (T - gw.size[1]) // 2))
 # through premultiplied-alpha compositing. Glyph-only has no corners to fringe.
 tray = sq.resize((16, 16), Image.LANCZOS)
 r, g, b, a = tray.split()
-white16 = Image.new('RGBA', tray.size, (255, 255, 255, 255))
+white16 = Image.new('RGBA', tray.size, (20, 20, 22, 255))
 white16.putalpha(a)
 # harden edges for tiny size: threshold alpha, scrub transparent RGB to white
 ab = white16.split()[3].point(lambda v: 255 if v >= 110 else 0)
@@ -99,7 +99,7 @@ abl = ab.load()
 for yy in range(16):
     for xx in range(16):
         if abl[xx, yy] == 0:
-            pxw[xx, yy] = (255, 255, 255, 0)
+            pxw[xx, yy] = (20, 20, 22, 0)
 white16.putalpha(ab)
 white16.save('assets/tray.png')
 print('tray.png updated (bare white glyph, no tile)')
