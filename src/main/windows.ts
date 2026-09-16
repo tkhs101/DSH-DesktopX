@@ -10,8 +10,12 @@ export function createSplash(): BrowserWindow {
 export function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280, height: 860, show: false, center: true,
+    title: 'DSH-DesktopX',
+    autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, '../preload/preload.js'), contextIsolation: true, nodeIntegration: false },
   });
+  // Lock the title: web page <title> changes must not rename the app window.
+  win.on('page-title-updated', (event) => event.preventDefault());
   // Keep the shell window on the local GUI: external links go to the OS browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/u.test(url)) void shell.openExternal(url);

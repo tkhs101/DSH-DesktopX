@@ -1,0 +1,74 @@
+from PIL import Image, ImageDraw, ImageFilter
+
+SRC = 'C:/Temp/whale-v2-src.png'  # user-supplied clean whale, white bg
+PAD_RATIO = 0.06  # tight bbox + small pad: whale fills the tile
+THRESH = 225
+
+
+def is_bg(p):
+    return p[0] > THRESH and p[1] > THRESH and p[2] > THRESH
+
+
+src = Image.open(SRC).convert('RGB')
+w, h = src.size
+px = src.load()
+
+minx, miny, maxx, maxy = w, h, 0, 0
+for y in range(h):
+    for x in range(w):
+        if not is_bg(px[x, y]):
+            minx = min(minx, x)
+            maxx = max(maxx, x)
+            miny = min(miny, y)
+            maxy = max(maxy, y)
+
+print('bbox:', minx, miny, maxx, maxy)
+pad = int(max(maxx - minx, maxy - miny) * PAD_RATIO)
+minx = max(0, minx - pad)
+miny = max(0, miny - pad)
+maxx = min(maxx + pad, w - 1)
+maxy = min(maxy + pad, h - 1)
+crop = src.crop((minx, miny, maxx + 1, maxy + 1))
+print('crop size:', crop.size)
+
+# square canvas, upscale 4x, hard mask at high res, smooth alpha back down
+side_in = max(crop.size)
+sq = Image.new('RGB', (side_in, side_in), (255, 255, 255))
+sq.paste(crop, ((side_in - crop.size[0]) // 2, (side_in - crop.size[1]) // 2))
+SCALE = 4
+big = sq.resize((side_in * SCALE, side_in * SCALE), Image.LANCZOS)
+bw, bh = big.size
+pxb = big.load()
+mask = bytearray(bw * bh)
+i = 0
+for y in range(bh):
+    for x in range(bw):
+        r, g, b = pxb[x, y]
+        mask[i] = 0 if (r > THRESH and g > THRESH and b > THRESH) else 255
+        i += 1
+m = Image.frombytes('L', big.size, bytes(mask))
+m = m.filter(ImageFilter.MinFilter(3))
+m = m.resize((side_in, side_in), Image.LANCZOS)
+sq.putalpha(m)
+
+TILE = 1024
+MARGIN = int(TILE * 0.06)
+# Near-black whale on near-black tile is invisible: DeepSeek-blue tile + white whale.
+tile = Image.new('RGBA', (TILE, TILE), (0, 0, 0, 0))
+d = ImageDraw.Draw(tile)
+d.rounded_rectangle([0, 0, TILE - 1, TILE - 1], radius=int(TILE * 0.225), fill=(77, 107, 254, 255))
+inner = TILE - 2 * MARGIN
+whale = sq.resize((inner, inner), Image.LANCZOS)
+r, g, b, a = whale.split()
+white = Image.new('RGBA', whale.size, (255, 255, 255, 255))
+white.putalpha(a)
+tile.alpha_composite(white, (MARGIN, MARGIN))
+tile.save('C:/Temp/whale-icon-1024.png')
+print('tile saved 1024')
+
+tray = tile.resize((16, 16), Image.LANCZOS)
+tray.save('assets/tray.png')
+print('tray.png updated')
+
+tile.save('assets/icon.ico', sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+print('icon.ico saved')
