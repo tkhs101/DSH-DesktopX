@@ -1,0 +1,21 @@
+appId: com.tkhs101.dshdesktopx
+productName: DSH-DesktopX
+copyright: Copyright © 2026
+directories:
+  output: release
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+win:
+  executableName: DSH-DesktopX
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  include: build/installer.nsh

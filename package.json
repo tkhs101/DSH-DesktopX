@@ -1,0 +1,23 @@
+{
+  "name": "dsh-desktopx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lightweight Electron shell for local dsh web (backend not bundled)",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "npm run build && electron .",
+    "start": "electron .",
+    "pack": "npm run build && electron-builder --win nsis --publish never",
+    "smoke": "node scripts/smoke-startup.mjs"
+  },
+  "devDependencies": {
+    "electron": "^38.8.6",
+    "electron-builder": "^26.0.0",
+    "typescript": "^5.6.0"
+  },
+  "allowScripts": {
+    "electron@38.8.6": true,
+    "electron-winstaller@5.4.0": true
+  }
+}

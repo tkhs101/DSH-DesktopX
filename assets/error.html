@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>启动失败 - DSH-DesktopX</title>
+<style>body{font-family:system-ui;background:#0f1115;color:#e8eaf0;display:flex;height:100vh;margin:0;align-items:center;justify-content:center}.box{max-width:520px}button{padding:8px 20px;font-size:14px}</style>
+</head><body><div class="box"><h2>后端启动失败</h2><pre id="msg"></pre><button id="retry">重试</button></div>
+<script>document.getElementById('msg').textContent = new URLSearchParams(location.search).get('msg') || '未知错误';</script></body></html>
