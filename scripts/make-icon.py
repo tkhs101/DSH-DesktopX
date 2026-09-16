@@ -67,9 +67,42 @@ tile.alpha_composite(black, (MARGIN, MARGIN))
 tile.save('C:/Temp/whale-icon-1024.png')
 print('tile saved 1024')
 
-tray = tile.resize((16, 16), Image.LANCZOS)
-tray.save('assets/tray.png')
-print('tray.png updated')
+# Tray at 16px: white rounded tile reads as a blob and its AA corners fringe.
+# Use BLACK rounded tile + WHITE whale (inverted brand): dark tile blends into
+# dark taskbars, white whale stays crisp; on light taskbars the black tile is
+# a clean rounded square (same language as the 1024 icon was). Binarized alpha.
+GLYPH = 64
+tile_small = tile.resize((GLYPH, GLYPH), Image.LANCZOS)
+tray = tile_small.resize((16, 16), Image.LANCZOS)
+# rebuild: black tile + white glyph at 16px directly for crisp edges
+T = 64
+t16tile = Image.new('RGBA', (T, T), (0, 0, 0, 0))
+dd = ImageDraw.Draw(t16tile)
+dd.rounded_rectangle([0, 0, T - 1, T - 1], radius=int(T * 0.225), fill=(20, 20, 22, 255))
+gw = sq.resize((int(T * 0.88), int(T * 0.88)), Image.LANCZOS)
+rr, gg, bb, aa = gw.split()
+ww = Image.new('RGBA', gw.size, (255, 255, 255, 255))
+ww.putalpha(aa)
+t16tile.alpha_composite(ww, ((T - gw.size[0]) // 2, (T - gw.size[1]) // 2))
+# Tray: NO tile — bare white whale glyph on full transparency.
+# Rationale: Win11 tray pads icons with its own rounded dark base; any square
+# tile (light or dark) fringes against it, and 16px AA corners leak dark RGB
+# through premultiplied-alpha compositing. Glyph-only has no corners to fringe.
+tray = sq.resize((16, 16), Image.LANCZOS)
+r, g, b, a = tray.split()
+white16 = Image.new('RGBA', tray.size, (255, 255, 255, 255))
+white16.putalpha(a)
+# harden edges for tiny size: threshold alpha, scrub transparent RGB to white
+ab = white16.split()[3].point(lambda v: 255 if v >= 110 else 0)
+pxw = white16.load()
+abl = ab.load()
+for yy in range(16):
+    for xx in range(16):
+        if abl[xx, yy] == 0:
+            pxw[xx, yy] = (255, 255, 255, 0)
+white16.putalpha(ab)
+white16.save('assets/tray.png')
+print('tray.png updated (bare white glyph, no tile)')
 
 tile.save('assets/icon.ico', sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 print('icon.ico saved')
