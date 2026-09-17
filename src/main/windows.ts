@@ -164,7 +164,12 @@ async function readSvgSource(
     if (/\\.svg(?:[?#]|$)/iu.test(src) || src.startsWith('blob:')) {
       const res = await fetch(src);
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      return { text: await res.text() };
+      const text = await res.text();
+      // A blob: URL carries no extension — verify the payload really is SVG
+      // before claiming it, otherwise a blob PNG would be saved as .svg.
+      const ct = res.headers.get('content-type') ?? '';
+      if (/svg/i.test(ct) || /<svg[\s>]/i.test(text.slice(0, 2000))) return { text };
+      return null;
     }
     return null;
   })();`);
@@ -277,6 +282,20 @@ export function createMainWindow(): BrowserWindow {
   // so reproduce what Chromium shows — text editing items when the click is
   // in an editable field or over a selection, link/image actions otherwise.
   win.webContents.on('context-menu', (_event, params) => {
+    void buildContextMenu(win, params).then((template) => {
+      Menu.buildFromTemplate(template).popup({ window: win });
+    });
+  });
+
+/**
+ * Build the Chrome-parity context menu for one right-click. Async only
+ * because the inline-SVG probe needs one renderer round-trip; every other
+ * branch decides from `params` synchronously.
+ */
+async function buildContextMenu(
+  win: BrowserWindow,
+  params: Electron.ContextMenuParams,
+): Promise<Electron.MenuItemConstructorOptions[]> {
     const wc = win.webContents;
     // Stash the click point for handlers that must locate the underlying
     // <video> element (saveVideoFrameAs) — params alone carries no node ref.
@@ -431,25 +450,31 @@ export function createMainWindow(): BrowserWindow {
         template.push({ label: '重新加载', role: 'reload' });
       }
       // Inline SVG has no <img> node, so the image branch above never fires
-      // for it — offer the same SVG save item here; the click handler
-      // no-ops (no-svg) when the click point turns out not to be SVG.
-      // mediaType 'none' keeps this off links/video/audio menus; plain text
-      // paragraphs (also 'none') get the item too, but it silently does
-      // nothing there, which is cheaper than a DOM probe per right-click.
+      // for it — ask the renderer whether the click point is really on SVG
+      // and only then add the item. One awaited DOM probe per right-click:
+      // context-menu is user-paced (not a hot path), so accuracy wins over
+      // the saved round-trip.
       if (!params.hasImageContents && params.mediaType === 'none' && params.linkURL === '') {
-        template.push({
-          label: 'SVG 另存为…',
-          click: () => {
-            void (async () => {
-              try {
-                await saveSvgAs(win, wc);
-              } catch (error) {
-                if (error instanceof Error && error.message === 'no-svg') return;
-                showSaveError(win, '图片', error);
-              }
-            })();
-          },
-        });
+        const svgHere = await wc.executeJavaScript(`(() => {
+          const x = window.__dshCtxX, y = window.__dshCtxY;
+          const el = (typeof x === 'number') ? document.elementFromPoint(x, y) : null;
+          return el?.closest?.('svg') instanceof SVGSVGElement;
+        })();`).catch(() => false);
+        if (svgHere === true) {
+          template.push({
+            label: 'SVG 另存为…',
+            click: () => {
+              void (async () => {
+                try {
+                  await saveSvgAs(win, wc);
+                } catch (error) {
+                  if (error instanceof Error && error.message === 'no-svg') return;
+                  showSaveError(win, '图片', error);
+                }
+              })();
+            },
+          });
+        }
       }
       if (params.selectionText.trim() === '' && !params.isEditable && !params.hasImageContents) {
         // Chat-first extra: dump the current viewport to a PNG file. Chrome
@@ -484,9 +509,10 @@ export function createMainWindow(): BrowserWindow {
           click: () => { wc.inspectElement(params.x, params.y); },
         },
       );
+      return template;
     }
-    Menu.buildFromTemplate(template).popup({ window: win });
-  });
+    return template;
+}
   // Keep the shell window on the local GUI: external links go to the OS browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/u.test(url)) void shell.openExternal(url);

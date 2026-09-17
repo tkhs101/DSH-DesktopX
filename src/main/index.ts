@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain } from 'electron';
 import { createMainWindow, createSplash, createToast, positionToast } from './windows.js';
 import { startBackend, stopBackend, type BackendHandle } from './backend.js';
 import { createTray } from './tray.js';
@@ -38,6 +38,7 @@ async function boot(): Promise<void> {
   ipcMain.handle('app:version', () => app.getVersion());
   createTray({
     onShow: () => { mainWin?.show(); mainWin?.focus(); },
+    onCopyUrl: () => copyLoginUrl(),
     onRestart: () => void reboot(),
     onDevTools: () => mainWin?.webContents.openDevTools({ mode: 'detach' }),
     onQuit: () => void quitAll(),
@@ -95,12 +96,56 @@ async function showToast(): Promise<void> {
       setTimeout(resolve, 1500);
     });
   }
+  // Restore the restart look in case a flashToast repurposed the window.
+  await toast.webContents.executeJavaScript(
+    `document.querySelector('.title').textContent = '正在重启后端…';` +
+    `document.querySelector('.sub').textContent = '请等待自动刷新';` +
+    `document.querySelector('.ring').style.display = '';`,
+  ).catch(() => undefined);
   positionToast(toast, mainWin);
   toast.showInactive();
 }
 
 function hideToast(): void {
   if (toast !== undefined && !toast.isDestroyed()) toast.hide();
+}
+
+/**
+ * Copy the current session's full authenticated UI URL (with token) to the
+ * clipboard and confirm with a toast in the same card language. No-ops
+ * silently when no backend is up yet (e.g. still booting).
+ */
+function copyLoginUrl(): void {
+  if (backend === undefined) return;
+  clipboard.writeText(backend.url);
+  void flashToast('复制完整 URL 成功', '已写入剪贴板，可直接粘贴打开');
+}
+
+/**
+ * Show the bottom-right toast with a custom message for ~2.5s. Reuses the
+ * restart toast window and styling; callers must not overlap with an
+ * in-flight restart (restarting flag owns the toast then).
+ */
+async function flashToast(title: string, sub: string): Promise<void> {
+  if (mainWin === undefined || mainWin.isDestroyed()) return;
+  if (!mainWin.isVisible()) mainWin.show();
+  if (toast === undefined || toast.isDestroyed()) {
+    toast = createToast(mainWin);
+    await new Promise<void>((resolve) => {
+      toast?.webContents.once('did-finish-load', () => resolve());
+      setTimeout(resolve, 1500);
+    });
+  }
+  await toast.webContents.executeJavaScript(
+    `document.querySelector('.title').textContent = ${JSON.stringify(title)};` +
+    `document.querySelector('.sub').textContent = ${JSON.stringify(sub)};` +
+    `document.querySelector('.ring').style.display = 'none';`,
+  ).catch(() => undefined);
+  positionToast(toast, mainWin);
+  toast.showInactive();
+  setTimeout(() => {
+    if (!restarting) hideToast();
+  }, 2500);
 }
 
 function joinAssets(file: string): string {
