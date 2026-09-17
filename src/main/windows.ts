@@ -15,6 +15,32 @@ export function createSplash(): BrowserWindow {
   return win;
 }
 
+/** Frameless, click-through toast pinned to the bottom-right of the main window. */
+export function createToast(parent: BrowserWindow): BrowserWindow {
+  const width = 300;
+  const height = 86;
+  const win = new BrowserWindow({
+    width, height, frame: false, resizable: false, show: false,
+    parent, skipTaskbar: true, focusable: false,
+    transparent: true, backgroundColor: '#00000000',
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  win.setIgnoreMouseEvents(true);
+  void win.loadFile(join(__dirname, '../../assets/toast.html'));
+  return win;
+}
+
+/** Keep the toast glued to the bottom-right inside the parent window's client area. */
+export function positionToast(toast: BrowserWindow, parent: BrowserWindow, margin = 20): void {
+  if (parent.isDestroyed() || toast.isDestroyed()) return;
+  const bounds = parent.getContentBounds();
+  const [w, h] = toast.getSize();
+  toast.setPosition(
+    Math.round(bounds.x + bounds.width - w - margin),
+    Math.round(bounds.y + bounds.height - h - margin),
+  );
+}
+
 export function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280, height: 860, show: false, center: true,

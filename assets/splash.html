@@ -96,20 +96,14 @@
     -webkit-user-drag: none;
   }
   .ring {
-    position: relative;
     width: 62px;
     height: 62px;
     margin-top: 44px;
-    border-radius: 50%;
-    border: 7px solid rgba(63, 140, 255, 0.16);
   }
-  .ring svg {
-    position: absolute;
-    inset: -7px;
-    width: calc(100% + 14px);
-    height: calc(100% + 14px);
-    display: block;
-    color: #3f8cff;
+  .ring svg { display: block; width: 100%; height: 100%; }
+  .ring .arc {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
     animation: spin 0.85s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -136,8 +130,9 @@
     <div class="center">
       <img class="logo" src="./logo.png" alt="deepseek HARNESS" draggable="false">
       <div class="ring" role="status" aria-label="loading">
-        <svg viewBox="0 0 54 54" fill="none">
-          <path d="M27 5 A22 22 0 0 1 49 27" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+        <svg viewBox="0 0 62 62" fill="none">
+          <circle cx="31" cy="31" r="27.5" stroke="#3f8cff" stroke-opacity="0.16" stroke-width="7"/>
+          <path class="arc" d="M31 3.5 A27.5 27.5 0 0 1 58.5 31" stroke="#3f8cff" stroke-width="7" stroke-linecap="round"/>
         </svg>
       </div>
       <div id="status">正在启动后端，请耐心等待</div>
