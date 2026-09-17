@@ -89,17 +89,36 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    /* Optical centering: this padding puts the middle of the WHOLE lockup
-       (logo ~76px + ring 44+62px + status 22+~24px ≈ 229px tall) at the
-       card's vertical center: 21% of the 980px card width ≈ 206px =
-       (640 − 229) / 2. Centering the logo alone (the old 29%) parked the
-       logo itself on the midline and left the spinner/status dangling
-       below it — that's why the logo felt "too centered". */
-    padding-top: 21%;
+    /* Two-block composition (do NOT center the lockup as one piece):
+       the LOGO block docks to the top padding, the LOADER block (ring +
+       status) docks to the bottom padding, and the leftover space between
+       them becomes the separating gap. The card's vertical midline then
+       falls in that empty gap — never through the logo — which is what
+       was making the logo feel "parked dead-center". Equal top/bottom
+       paddings keep the whole composition vertically balanced:
+       168 + 77(logo) + ~123(gap) + 62(ring) + 22 + ~24(status) + 168 ≈ 640. */
+    justify-content: space-between;
+    padding-top: 168px;
+    padding-bottom: 168px;
     padding-left: 60px;
     padding-right: 60px;
     text-align: center;
+  }
+  /* Block 1: hero. width:100% gives the img's `min(620px, 74%)` a definite
+     basis (without it the block shrink-wraps the image and the % resolves
+     against nothing, shrinking the logo). Sits in the upper third on clean
+     white, clear of the win buttons, the top-right blob and the waves. */
+  .logo-block {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  /* Block 2: progress. Ring + status kept tight (22px) so they read as one
+     unit, floating over the light part of the waves in the lower third. */
+  .load-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .logo {
     width: min(620px, 74%);
@@ -110,7 +129,6 @@
   .ring {
     width: 62px;
     height: 62px;
-    margin-top: 44px;
   }
   .ring svg { display: block; width: 100%; height: 100%; }
   .ring .arc {
@@ -140,14 +158,18 @@
       <path d="M0,235 C170,215 320,250 500,278 C680,305 800,285 920,245 L920,300 L0,300 Z" fill="#c9deff" opacity="0.5"/>
     </svg>
     <div class="center">
-      <img class="logo" src="./logo.png" alt="deepseek HARNESS" draggable="false">
-      <div class="ring" role="status" aria-label="loading">
-        <svg viewBox="0 0 62 62" fill="none">
-          <circle cx="31" cy="31" r="27.5" stroke="#3f8cff" stroke-opacity="0.16" stroke-width="7"/>
-          <path class="arc" d="M31 3.5 A27.5 27.5 0 0 1 58.5 31" stroke="#3f8cff" stroke-width="7" stroke-linecap="round"/>
-        </svg>
+      <div class="logo-block">
+        <img class="logo" src="./logo.png" alt="deepseek HARNESS" draggable="false">
       </div>
-      <div id="status">正在启动后端，请耐心等待</div>
+      <div class="load-block">
+        <div class="ring" role="status" aria-label="loading">
+          <svg viewBox="0 0 62 62" fill="none">
+            <circle cx="31" cy="31" r="27.5" stroke="#3f8cff" stroke-opacity="0.16" stroke-width="7"/>
+            <path class="arc" d="M31 3.5 A27.5 27.5 0 0 1 58.5 31" stroke="#3f8cff" stroke-width="7" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div id="status">正在启动后端，请耐心等待</div>
+      </div>
     </div>
   </div>
 <script>

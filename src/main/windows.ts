@@ -1,4 +1,4 @@
-import { BrowserWindow, shell } from 'electron';
+import { BrowserWindow, screen, shell } from 'electron';
 import { join } from 'node:path';
 
 /**
@@ -57,13 +57,43 @@ export function positionToast(toast: BrowserWindow, parent: BrowserWindow, margi
   );
 }
 
+/**
+ * Initial main-window size is derived from the primary display's work area
+ * instead of hardcoded pixels. Calibration: on a 1536x824 work area the
+ * 1191x776 window felt right (≈77.5% of the width, ≈94.2% of the height),
+ * so those ratios are the spec — 1191/1536 = 0.775, 776/824 = 0.942.
+ * The window is then fitted inside the work area (minus a margin so the
+ * frame never kisses the taskbar or edges) while preserving the content
+ * aspect ratio. Without the fit, an oversized centered window gets clamped
+ * by Windows itself — observed: silently stretched to full work-area
+ * height ("上下拉满"), which looks like a maximize bug.
+ */
+const MAIN_W_RATIO = 1191 / 1536;
+const MAIN_H_RATIO = 776 / 824;
+const WORKAREA_MARGIN = 48;
+
+function mainInitialSize(): { width: number; height: number } {
+  const area = screen.getPrimaryDisplay().workArea;
+  const wantW = area.width * MAIN_W_RATIO;
+  const wantH = area.height * MAIN_H_RATIO;
+  const availW = Math.max(0, area.width - WORKAREA_MARGIN);
+  const availH = Math.max(0, area.height - WORKAREA_MARGIN);
+  const scale = Math.min(1, availW / wantW, availH / wantH);
+  return {
+    width: Math.floor(wantW * scale),
+    height: Math.floor(wantH * scale),
+  };
+}
+
 export function createMainWindow(): BrowserWindow {
-  // Same footprint as the splash card (980x640) on the same `center: true`
-  // anchor: at handoff the white splash card is replaced by the app window
-  // in place, with no visible size/position jump. Still resizable, so this
-  // only sets the initial size.
+  // Size comes from mainInitialSize (work-area ratios, same `center: true`
+  // anchor as the splash): at handoff the window grows outward
+  // symmetrically from the splash card, which reads as an intentional
+  // "bloom" instead of a jump to a corner. Still resizable, so this only
+  // sets the initial size.
+  const { width, height } = mainInitialSize();
   const win = new BrowserWindow({
-    width: 980, height: 640, show: false, center: true,
+    width, height, show: false, center: true,
     title: 'DSH-DesktopX',
     autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, '../preload/preload.js'), contextIsolation: true, nodeIntegration: false },
