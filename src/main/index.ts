@@ -15,6 +15,10 @@ let restarting = false;
 if (!app.requestSingleInstanceLock()) app.quit();
 
 async function boot(): Promise<void> {
+  // Fire the backend in parallel with Electron init: startBackend does not
+  // touch any Electron API, and app.whenReady() plus window/tray creation
+  // (~150–300ms cold) would otherwise sit on the critical path.
+  const bootPromise = startBackend();
   await app.whenReady();
   splash = createSplash();
   mainWin = createMainWindow();
@@ -39,10 +43,10 @@ async function boot(): Promise<void> {
     onQuit: () => void quitAll(),
   });
   app.on('second-instance', () => { mainWin?.show(); mainWin?.focus(); });
-  await reboot();
+  await reboot(bootPromise);
 }
 
-async function reboot(): Promise<void> {
+async function reboot(preSpawned?: Promise<BackendHandle>): Promise<void> {
   const isRestart = !booting;
   booting = false;
   if (isRestart) {
@@ -52,8 +56,20 @@ async function reboot(): Promise<void> {
   splash?.show();
   if (backend !== undefined) { await stopBackend(backend.child); backend = undefined; }
   try {
-    backend = await startBackend();
-    await mainWin?.loadURL(backend.url);
+    backend = await (preSpawned ?? startBackend());
+    const url = backend.url;
+    // Load first, then show on first paint: the window no longer pops a
+    // blank frame while the web UI finishes its own ~0.5–1.5s client boot
+    // (measured: ready-to-show lands well before did-finish-load).
+    const shown = new Promise<void>((resolve) => { mainWin?.once('ready-to-show', () => resolve()); });
+    const painted = new Promise<void>((resolve) => {
+      // Belt-and-suspenders: never trap the user on the splash if the page
+      // paints without emitting ready-to-show.
+      const fallback = setTimeout(resolve, 15_000);
+      mainWin?.once('ready-to-show', () => { clearTimeout(fallback); resolve(); });
+    });
+    await mainWin?.loadURL(url);
+    await Promise.race([shown, painted]);
     mainWin?.show();
     splash?.close(); splash = undefined;
   } catch (error) {
