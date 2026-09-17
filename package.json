@@ -2,6 +2,8 @@
   "name": "dsh-desktopx",
   "version": "0.1.1",
   "private": true,
+  "license": "MIT",
+  "author": "tkhs101",
   "description": "Lightweight Electron shell for local dsh web (backend not bundled)",
   "main": "dist/main/index.js",
   "scripts": {
