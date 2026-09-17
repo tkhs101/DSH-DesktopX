@@ -84,7 +84,7 @@ dsh --version
 
 ## 为什么不选 dsh-desktop
 
-社区里最主流的选择是 [anywhere-labs/dsh-desktop](https://github.com/anywhere-labs/dsh-desktop)（27k stars，MIT，功能确实更全）。下面是**如实**对比，包括我们不如它的地方。
+社区里最主流的选择是 [anywhere-labs/dsh-desktop](https://github.com/anywhere-labs/dsh-desktop)（27k stars，MIT）。**它功能更全，本项目不是它的替代品**——定位不同，所以按「谁更省事」这个对我们有利的标准逐项对比（对我们不利的项收在下面的折叠里，没删）。
 
 | 对比项 | **DSH-DesktopX**（本项目） | [anywhere-labs/dsh-desktop](https://github.com/anywhere-labs/dsh-desktop) |
 |---|:---:|:---:|
