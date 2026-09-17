@@ -19,13 +19,19 @@
   }
   .window {
     position: relative;
-    width: calc(100vw - 20px);
-    height: calc(100vh - 20px);
+    /* 28px transparent gutter on every side is the shadow's breathing room:
+       the shadow below needs 12+15=27px, sides 15px. Keep in sync with the
+       window size in windows.ts, or the shadow gets clipped into a hard edge. */
+    width: calc(100vw - 56px);
+    height: calc(100vh - 56px);
     background: #ffffff;
     border: 1px solid #e4e9f2;
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 24px 70px rgba(30, 58, 120, 0.14);
+    /* Two layers: a tight contact shadow + a soft ambient one. */
+    box-shadow:
+      0 4px 10px rgba(30, 58, 120, 0.08),
+      0 12px 30px rgba(30, 58, 120, 0.12);
     -webkit-app-region: drag;
   }
   .win-btns {
