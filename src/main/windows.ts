@@ -58,8 +58,12 @@ export function positionToast(toast: BrowserWindow, parent: BrowserWindow, margi
 }
 
 export function createMainWindow(): BrowserWindow {
+  // Same footprint as the splash card (980x640) on the same `center: true`
+  // anchor: at handoff the white splash card is replaced by the app window
+  // in place, with no visible size/position jump. Still resizable, so this
+  // only sets the initial size.
   const win = new BrowserWindow({
-    width: 1280, height: 860, show: false, center: true,
+    width: 980, height: 640, show: false, center: true,
     title: 'DSH-DesktopX',
     autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, '../preload/preload.js'), contextIsolation: true, nodeIntegration: false },

@@ -90,7 +90,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 29%;
+    /* Optical centering: this padding puts the middle of the WHOLE lockup
+       (logo ~76px + ring 44+62px + status 22+~24px ≈ 229px tall) at the
+       card's vertical center: 21% of the 980px card width ≈ 206px =
+       (640 − 229) / 2. Centering the logo alone (the old 29%) parked the
+       logo itself on the midline and left the spinner/status dangling
+       below it — that's why the logo felt "too centered". */
+    padding-top: 21%;
     padding-left: 60px;
     padding-right: 60px;
     text-align: center;
